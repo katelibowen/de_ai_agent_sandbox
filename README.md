@@ -21,18 +21,14 @@ An open-source **Agentic AI Framework** designed to automate dbt (data build too
 
 ## ⚙️ Step-by-Step Setup Guide
 
-### 1. Enable Hardware Virtualization
-Before starting, ensure Virtualization (VT-x/AMD-V) is enabled in your BIOS.
-* HP EliteBook Steps: Restart > Tap Esc > F10 (BIOS) > System Configuration > Device Configurations > Enable Virtualization Technology.
-
-### 2. Launch the Docker Stack
+### 1. Launch the Docker Stack
 This command starts the n8n "Brain" and the Ollama "Muscle" in a private, shared network.
 
     docker-compose up -d
 
 Verify: Run 'docker ps'. You should see 'n8n_data_agent' and 'ollama_service' both showing as "Up".
 
-### 3. Initialize the AI Model
+### 2. Initialize the AI Model
 By default, the Ollama container is an empty shell. You must "pull" the model into the container's internal storage to enable the reasoning engine:
 
     docker exec -it ollama_service ollama pull llama3.2:1b
@@ -40,7 +36,7 @@ By default, the Ollama container is an empty shell. You must "pull" the model in
 > [!NOTE]
 > This is a ~1.3GB download. Once it reaches 100%, the AI is live and ready for inference.
 
-### 4. Configure the n8n Workflow
+### 3. Configure the n8n Workflow
 1. Open n8n: Navigate to http://localhost:5678 in your browser.
 2. Import: Go to Settings > Import from File and select the .json workflow from the /n8n directory.
 3. GitHub Connection:
@@ -51,7 +47,7 @@ By default, the Ollama container is an empty shell. You must "pull" the model in
     * Open the Ollama Chat Model node.
     * Set the Base URL to http://ollama_service:11434. (Docker uses service names for internal DNS).
 
-### 5. Run the Audit
+### 4. Run the test
 Trigger the agent using the provided Python wrapper script:
 
     python scripts/ask_agent.py
