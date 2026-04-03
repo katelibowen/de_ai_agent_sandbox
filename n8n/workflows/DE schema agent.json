@@ -1,0 +1,199 @@
+{
+  "name": "My workflow 3",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.body.chatInput }}",
+        "options": {
+          "systemMessage": "You are a Senior Data Engineer specializing in dbt and Airflow.\n\nRule 1: You MUST use the Get_a_file_in_GitHub tool to read the content of a file before providing an audit.\nRule 2: Do not show me JSON or function parameters.\nRule 3: If the file follows all naming conventions, respond with: '✅ Naming conventions verified. No errors found.'\nRule 4: If errors exist, list them as bullet points.\n### ACCESS:\nYou have a GitHub tool to read files from the 'kate_data_playground' repository.\n\n### KNOWLEDGE BASE STRUCTURE:\n1. STAGING (Silver): Found in 'dbt/models/staging/'. Use these to see raw data cleaning.\n2. INTERMEDIATE: Found in 'dbt/models/intermediate/'. Use these for complex joins.\n3. MARTS (Gold): Found in 'dbt/models/marts/'. These are final business tables like 'dim_customers'.\n4. ORCHESTRATION: Found in '/dags/'. These explain the Airflow schedule.\n\n### YOUR TASKS:\n- When asked a question, use the GitHub tool to read the relevant .sql or .py files.\n- Explain the 'Data Lineage' (how data flows from staging to marts).\n- If a user wants a change, suggest which specific file needs to be edited.\n- Keep answers technical but concise.You are a conversational assistant. NEVER output raw JSON tool calls directly to the user. If you use a tool, wait for the result and then explain it in plain English\n### OUTPUT FORMATTING RULES:\n1. PERMALINKS: Always provide a direct link to the file on GitHub using this format: \n   https://github.com/[OWNER]/[REPO]/blob/main/[FILE_PATH]\n2. LINE LINKS: If discussing a specific logic block, append '#L' and the line number (e.g., .../file.sql#L10).\n3. EXPLANATIONS: Use plain English to describe the logic. Avoid overly technical jargon. \n   Example: \"This model joins orders and payments to calculate the total spent by each customer.\"\n4. STRUCTURE: Use headers (##) for the file name and bullet points for the logic.\nDo not respond with JSON. Always respond in Markdown. Use bold headers for file names, bullet points for logic, and create clickable links using this format: File Name.\nDo not use Markdown code blocks (```) in your response.\nProvide a concise, plain-text summary of your findings.\nIf you used a tool, explain the result clearly without showing raw function parameters\nCRITICAL: When providing a file_path, never start with a forward slash. Example: use 'dbt/models/marts/file.sql' NOT '/dbt/models/marts/file.sql'. Ensure you use the correct folder structure."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        432,
+        16
+      ],
+      "id": "b854c2b2-5c0e-423e-8c32-6f76b160a4b3",
+      "name": "AI Agent",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "model": "llama3.2:1b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        80,
+        208
+      ],
+      "id": "dc054073-53b5-467c-88bd-58792bc6400a",
+      "name": "Ollama Chat Model",
+      "alwaysOutputData": false,
+      "credentials": {
+        "ollamaApi": {
+          "id": "mRn7UIWL69xrojB0",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.body.sessionId || \"default-session\" }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        224,
+        208
+      ],
+      "id": "cb1931d3-db07-4e4a-a2bf-fd2a9d6237a0",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Use this to get file content. IMPORTANT: The file_path parameter MUST NOT start with a slash. Correct: 'dbt/models/marts/file.sql'. Incorrect: '/dbt/models/marts/file.sql",
+        "resource": "file",
+        "operation": "get",
+        "owner": {
+          "__rl": true,
+          "value": "=katelibowen",
+          "mode": "name"
+        },
+        "repository": {
+          "__rl": true,
+          "mode": "name",
+          "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Repository_Name', ``, 'string') }}"
+        },
+        "filePath": "={{ $fromAI('file_path').replace(/^\\//, '') }}",
+        "binaryPropertyName": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Put_Output_File_in_Field', ``, 'string') }}",
+        "additionalParameters": {
+          "reference": "={{ $fromAI('Reference', ``, 'string') }}"
+        }
+      },
+      "type": "n8n-nodes-base.githubTool",
+      "typeVersion": 1.1,
+      "position": [
+        368,
+        208
+      ],
+      "id": "2f165cb1-a067-498b-b589-1fe6a0cc6668",
+      "name": "Get a file in GitHub",
+      "webhookId": "bd19f371-b83e-422a-be0f-33d0578a8a66",
+      "credentials": {
+        "githubApi": {
+          "id": "7zojXdfOIjqvz1Xm",
+          "name": "GitHub account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "data-agent",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        208,
+        16
+      ],
+      "id": "f410ae20-935e-47e0-965a-50049482a2c9",
+      "name": "Webhook",
+      "webhookId": "facb8d1d-f001-4060-a2c6-63216daa81a1"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"output\": $json.output } }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        784,
+        16
+      ],
+      "id": "3037222e-2c3a-4ece-9c52-e037d8ac97ec",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Ollama Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a file in GitHub": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
+  },
+  "versionId": "cb67f27f-39a3-416d-99fe-a86626212340",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "2c61322c62075d50df6832250829c353effa4773a211c1260f435944a4962369"
+  },
+  "id": "pjGKcyT2ZNEAywfo",
+  "tags": []
+}
